@@ -3,6 +3,8 @@ class ApartmentMailer < ApplicationMailer
 
   def apartment_email
     @apartments = params[:apartments]
+    @open_all = 'https://suumo-mailer.netlify.app?'
+    @apartments.each {|apartment| @open_all = @open_all + "apartment=#{CGI.escape(apartment[:href])},#{apartment[:address]}&"}
     @url = params[:url]
     to = params[:to]
     if @apartments.size == 0

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Suumo Mailer</title>
+</head>
+<body>
+    <h1>Suumo Mailer</h1>
+    <p>Opening new apartments...</p>
+    <script>
+        const apartments = [] // '<href>,<address>'[]
+        for(const entry of new URLSearchParams(location.search).entries()) {
+            if(entry[0] !== 'apartment') continue
+            apartments.push(entry[1])
+        }
+        console.log(apartments)
+        apartments.forEach(apartment => {
+            const [suumo, address] = apartment.split(',')
+            window.open(suumo,'_blank');
+            window.open(`http://maps.google.com/?q=${address}`, '_blank');
+        })
+    </script>
+</body>
+</html>

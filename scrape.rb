@@ -6,14 +6,18 @@ class HtmlParser
   @@house = '.cassetteitem'
   @@apartment = 'tbody'
   @@href = '.js-cassette_link_href'
+  @@address = '.cassetteitem_detail-col1'
   @@rent = '.cassetteitem_price--rent'
 
+  def self.address(house)
+    # 東京都国分寺市日吉町１
+    return house.search(@@address).inner_text
+  end
   def self.href(apartment)
     # Two apartments of the same house have random jnc_ and bc= values
     # https://suumo.jp/chintai/jnc_000036589660/?bc=100318741343
     return "https://suumo.jp/#{apartment.search(@@href).attr("href")}"
   end
-
   def self.rent(apartment)
     # 4.6万円 -> 4.6
     return apartment.search(@@rent).inner_text.to_f
@@ -23,6 +27,7 @@ class HtmlParser
     result = Array.new
     houses = Hpricot(html).search @@house
     houses.each do |house|
+      address = HtmlParser.address(house)
       apartments = house.search(@@apartment)
       highest_rent_apartment = nil
       highest_rent = 0
@@ -33,7 +38,7 @@ class HtmlParser
           highest_rent = rent
         end
       end
-      result.push({ href: HtmlParser.href(highest_rent_apartment) })
+      result.push({ href: HtmlParser.href(highest_rent_apartment), address: address })
     end
     return result
   end
@@ -71,7 +76,7 @@ class Scraper
     new_apartments = apartments.filter { |apartment| !known_hrefs.include?(apartment[:href]) }
 
     # Reverse the apartments so that the first apartments gets saved last and becomes the most recent apartment
-    query.apartments << new_apartments.map { |apartment| Apartment.new(href: apartment[:href]) }.reverse
+    query.apartments << new_apartments.map { |apartment| Apartment.new(href: apartment[:href], address: apartment[:address]) }.reverse
 
     query.save()
 

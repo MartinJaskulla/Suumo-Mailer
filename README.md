@@ -2,8 +2,7 @@
 
 1. Open https://suumo.jp/chintai/kanto/ and choose "Along the line" e.g. https://suumo.jp/chintai/tokyo/ensen/ or "Area" e.g. https://suumo.jp/chintai/tokyo/city/
 2. Configure your search
-3. Order by "New arrival order"
-4. Add the Suumo url via `crontab -e`
+3. Add the Suumo url via `crontab -e`
 
 Example:
 ```

@@ -19,7 +19,7 @@ class HtmlParser
     return apartment.search(@@rent).inner_text.to_f
   end
 
-  def self.apartments(html:, stop_parsing:)
+  def self.apartments(html)
     result = Array.new
     houses = Hpricot(html).search @@house
     houses.each do |house|
@@ -27,9 +27,6 @@ class HtmlParser
       highest_rent_apartment = nil
       highest_rent = 0
       apartments.each do |apartment|
-        if stop_parsing.call(apartment)
-          return result
-        end
         rent = HtmlParser.rent(apartment)
         if rent > highest_rent
           highest_rent_apartment = apartment
@@ -52,29 +49,25 @@ class Scraper
   def scrape
     puts @url
 
+    # TODO If query runs for first time, only do not send email
     query = Query.find_or_create_by(url: @url)
 
-    recent_apartments = query
-                          .apartments
-                          .order(created_at: :desc)
-                          .limit(30)
-                          .map { |apartment| apartment[:href] }.to_set()
-
-    apartments = HtmlParser.apartments(
-      html: @client.get(@url).body,
-      stop_parsing: ->(apartment) { recent_apartments.include?(HtmlParser.href(apartment)) }
-    )
-
-    puts "#{apartments.size} new apartments for query"
-
-    if (apartments.size == 0)
-      return
+    apartments = Array.new
+    page = 1
+    while true
+      response_apartments = HtmlParser.apartments(@client.get("#{@url}&page=#{page}").body)
+      if (response_apartments.size == 0)
+        break
+      end
+      apartments = apartments.concat(response_apartments)
+      page = page + 1
     end
 
-    # A different query might already have the apartment
+    puts "#{apartments.size} apartments for query."
     hrefs = apartments.map { |apartment| apartment[:href] }
-    known_hrefs = Apartment.where(href: hrefs).map { |apartment| apartment[:href] }.to_set()
-    puts "#{known_hrefs.size}/#{apartments.size} apartments already saved by other queries"
+    # A different query might already have the apartment
+    known_hrefs = Apartment.where(href: hrefs).pluck('href').to_set()
+    puts "#{known_hrefs.size}/#{apartments.size} apartments already known."
     new_apartments = apartments.filter { |apartment| !known_hrefs.include?(apartment[:href]) }
 
     # Reverse the apartments so that the first apartments gets saved last and becomes the most recent apartment

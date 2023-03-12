@@ -49,7 +49,7 @@ class Scraper
   def scrape
     puts @url
 
-    # TODO If query runs for first time, only do not send email
+    isNewQuery = Query.find_by(url: @url) == nil
     query = Query.find_or_create_by(url: @url)
 
     apartments = Array.new
@@ -75,6 +75,10 @@ class Scraper
 
     query.save()
 
+    if(isNewQuery)
+      puts "Not sending email to #{@mail} - New query"
+      return
+    end
     ApartmentMailer.with(apartments: new_apartments, to: @mail, url: @url).apartment_email.deliver_now
   end
 end

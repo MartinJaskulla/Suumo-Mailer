@@ -68,11 +68,11 @@ class Scraper
       page = page + 1
     end
 
-    puts "#{apartments.size} apartments for query."
+    puts "#{apartments.size} apartments for query"
     hrefs = apartments.map { |apartment| apartment[:href] }
     # A different query might already have the apartment
     known_hrefs = Apartment.where(href: hrefs).pluck('href').to_set()
-    puts "#{known_hrefs.size}/#{apartments.size} apartments already known."
+    puts "#{apartments.size - known_hrefs.size}/#{apartments.size} apartments are new"
     new_apartments = apartments.filter { |apartment| !known_hrefs.include?(apartment[:href]) }
 
     # Reverse the apartments so that the first apartments gets saved last and becomes the most recent apartment

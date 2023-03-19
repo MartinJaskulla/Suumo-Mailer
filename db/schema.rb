@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_03_19_001237) do
+ActiveRecord::Schema[7.0].define(version: 2023_03_19_031257) do
   create_table "apartments", force: :cascade do |t|
     t.string "href"
     t.datetime "created_at", null: false
@@ -21,6 +21,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_19_001237) do
     t.float "rent"
     t.float "size"
     t.string "layout"
+    t.string "hash_id"
     t.index ["href"], name: "index_apartments_on_href", unique: true
   end
 

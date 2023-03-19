@@ -17,10 +17,10 @@
 
 ## Motivation
 - The official Suumo notifications are buffered until a certain amount of new apartments were published. The notification email might be sent hours later. Suumo Mailer will email you new apartments one minute after they are published. 
-- The "New arrival order" sort order on Suumo is fake. New apartments do not appear first or last. So if you don't want to click through all pages of your search results to find new apartments, use Suumo Mailer instead.
+- The "New arrival order" sort order on Suumo is not working correctly. New apartments do not appear first or last. So if you don't want to click through all pages of your search results to find new apartments, use Suumo Mailer instead.
+- Suumo does not detect duplicate listings of the apartment. You can get Suumo notification emails including the same apartment uploaded by different agents for weeks.
 
 ## Limitations
-- Duplicate apartments are not detected yet. In my experience roughly 30% of apartments are duplicates. 
 - Apartments might not actually be new. Suumo Mailer only checks if the *listing* is new. Sometimes you might call a freshly published apartment and 7 people have already applied several days ago.
 - When your computer is in sleep mode, Suumo Mailer does nothing.
 

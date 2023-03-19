@@ -95,6 +95,42 @@ class HtmlParser
   end
 end
 
+class DuplicateFinder
+  # Maybe allow some small differences. The same apartment might get 50.13m and 50m in two different listings
+  # With SIZE_STEP = 2: 0m,2m,4m,6m
+  # SIZE_STEP = 2
+  # rounded_size = (apartment[:size] / SIZE_STEP).round * SIZE_STEP
+  def self.hash_id(apartment)
+    return "#{apartment[:address]},#{apartment[:age]},#{apartment[:stories]},#{apartment[:rent]},#{apartment[:size]},#{apartment[:layout]}"
+  end
+  def self.hash_id_set(apartments)
+    set = Set.new
+    apartments.each { |apartment| set.add(DuplicateFinder.hash_id(apartment)) }
+    return set
+  end
+
+  # Or I add apartments 1 by 1 to db and just always check against db? no ineffient
+  # What if I make the hash the primary key? then i would loose the duplicates. I actually want to save the duplicates! and have second table to group them to have multiple options to call
+  # So I should not remove them here but group them?
+  # Second table groupname is the hash? Maybe no second table needed then?
+  # Save all new apartments don't even check duplicates, then for each apartment check if there is a hash with in the db (after saving all hashes in db + inefficient. pluck href and hash)
+  def self.complement(apartments, not_in)
+    return apartments.filter { |apartment| !not_in.include?(DuplicateFinder.hash_id(apartment)) }
+  end
+  def self.deduplicate(apartments)
+    seen = Set.new
+    unique_apartments = Array.new
+    apartments.each do |apartment|
+      hash_id = DuplicateFinder.hash_id(apartment)
+      if !seen.include?(hash_id)
+        unique_apartments.push(apartment)
+        seen.add(hash_id)
+      end
+    end
+    return unique_apartments
+  end
+end
+
 class Scraper
   def initialize(mail, url)
     @mail = mail
@@ -119,23 +155,32 @@ class Scraper
       page = page + 1
     end
 
-    puts "#{apartments.size} apartments for query"
-    hrefs = apartments.map { |apartment| apartment[:href] }
-    # A different query might already have the apartment
-    known_hrefs = Apartment.where(href: hrefs).pluck('href').to_set()
-    puts "#{apartments.size - known_hrefs.size}/#{apartments.size} apartments are new"
-    new_apartments = apartments.filter { |apartment| !known_hrefs.include?(apartment[:href]) }
+    puts "#{apartments.size} apartments"
+    known = Apartment.pluck('href', 'hash_id')
+    known_hrefs = known.map { |known| known[0] }.to_set()
+    known_hash_ids = known.map { |known| known[1] }.to_set()
+
+    # An apartment might have already been saved by a different Query -> Check all apartments from db
+    # Saving duplicate apartments to the db to list them in a UI
+    save_apartments = apartments
+                        .filter { |apartment| !known_hrefs.include?(apartment[:href]) }
+                        .map { |apartment| apartment[:hash_id] = DuplicateFinder.hash_id(apartment); apartment }
 
     # Reverse the apartments so that the first apartments gets saved last and becomes the most recent apartment
-    query.apartments << new_apartments.map { |apartment| Apartment.new(apartment) }.reverse
-
+    query.apartments << save_apartments
+                          .map { |apartment| Apartment.new(apartment) }
+                          .reverse
     query.save()
+    puts "#{save_apartments.size}/#{apartments.size} apartments saved"
 
     if (isNewQuery)
       puts "Not sending email to #{@mail} - New query"
       return
     end
-    ApartmentMailer.with(apartments: new_apartments, to: @mail, url: @url).apartment_email.deliver_now
+
+    new_to_db = DuplicateFinder.complement(save_apartments, known_hash_ids)
+    new_to_db_unique = DuplicateFinder.deduplicate(new_to_db)
+    ApartmentMailer.with(apartments: new_to_db_unique, to: @mail, url: @url).apartment_email.deliver_now
   end
 end
 

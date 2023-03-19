@@ -8,7 +8,7 @@ class ApartmentMailer < ApplicationMailer
     @url = params[:url]
     to = params[:to]
     if @apartments.size == 0
-      puts "Not sending email to #{to} - #{@apartments.size} new apartments"
+      puts "0 new apartments - email not sent"
       return
     end
     puts "#{@apartments.size} new apartments sent to #{to}"
